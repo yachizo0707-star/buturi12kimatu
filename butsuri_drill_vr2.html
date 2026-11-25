@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="物理ドリル">
+<meta name="theme-color" content="#0d0f1a">
+<title>物理ドリル 期末対策</title>
+<style>
+:root {
+  --bg:#0d0f1a; --surface:#141728; --surface2:#1e2340;
+  --text:#e8eaf6; --text2:#7880a0;
+  --radius:14px;
+  --correct:#69c46d; --wrong:#e05c5c; --combo:#ffd54f;
+  --phy:#7c83ff; --phy-dark:#0d0f2a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;}
+body{
+  font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN',sans-serif;
+  background:var(--bg);color:var(--text);
+  -webkit-text-size-adjust:100%;
+  position:fixed;width:100%;
+}
+.screen{display:none;flex-direction:column;position:absolute;inset:0;overflow:hidden;}
+.screen.active{display:flex;}
+#top,#home,#result{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+
+/* ===== TOP ===== */
+#top{
+  align-items:center;
+  padding:calc(40px + env(safe-area-inset-top)) 20px calc(32px + env(safe-area-inset-bottom));
+  gap:16px;
+}
+.app-logo{font-size:60px;text-align:center;}
+.app-title{font-size:26px;font-weight:800;text-align:center;letter-spacing:.05em;}
+.app-title span{background:linear-gradient(90deg,#7c83ff,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.exam-badge{background:var(--surface2);border:1.5px solid var(--phy);border-radius:12px;padding:10px 20px;font-size:13px;color:var(--phy);font-weight:700;}
+.unit-cards{display:flex;flex-direction:column;gap:12px;width:100%;max-width:380px;}
+.unit-card{
+  background:var(--surface);border:none;border-radius:var(--radius);
+  padding:18px 20px;display:flex;align-items:center;gap:14px;
+  cursor:pointer;text-align:left;-webkit-appearance:none;
+  border-left:4px solid var(--phy);
+}
+.unit-card-icon{font-size:28px;flex-shrink:0;}
+.unit-card-info{flex:1;}
+.unit-card-name{font-size:16px;font-weight:700;color:var(--text);}
+.unit-card-sub{font-size:11px;color:var(--text2);margin-top:3px;}
+.unit-card-count{font-size:11px;color:var(--phy);margin-top:4px;font-weight:700;}
+.unit-card-arrow{font-size:20px;color:var(--phy);}
+.all-btn{
+  background:linear-gradient(135deg,var(--phy),#a78bfa);
+  border:none;border-radius:var(--radius);
+  padding:16px 24px;width:100%;max-width:380px;
+  font-size:16px;font-weight:800;color:#fff;
+  cursor:pointer;-webkit-appearance:none;
+}
+
+/* ===== HOME (unit detail) ===== */
+#home{padding:calc(16px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));gap:12px;align-items:center;}
+.back-btn{align-self:flex-start;background:none;border:none;color:var(--phy);font-size:16px;font-weight:700;padding:4px 0;cursor:pointer;-webkit-appearance:none;}
+.home-title{font-size:22px;font-weight:800;text-align:center;}
+.home-sub{font-size:12px;color:var(--text2);text-align:center;}
+.level-cards{display:flex;flex-direction:column;gap:10px;width:100%;max-width:380px;margin-top:8px;}
+.level-card{
+  background:var(--surface);border:none;border-radius:var(--radius);
+  padding:16px 20px;display:flex;align-items:center;gap:12px;
+  cursor:pointer;text-align:left;-webkit-appearance:none;
+}
+.level-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.level-dot.basic{background:#69c46d;}
+.level-dot.standard{background:#7c83ff;}
+.level-dot.advanced{background:#ffd54f;}
+.level-dot.all{background:linear-gradient(135deg,var(--phy),#a78bfa);}
+.level-info{flex:1;}
+.level-name{font-size:15px;font-weight:700;}
+.level-sub{font-size:11px;color:var(--text2);margin-top:2px;}
+.level-arrow{font-size:18px;color:var(--text2);}
+.stats-row{display:flex;gap:16px;width:100%;max-width:380px;}
+.stat-box{flex:1;background:var(--surface);border-radius:12px;padding:12px;text-align:center;}
+.stat-val{font-size:22px;font-weight:800;color:var(--phy);}
+.stat-label{font-size:10px;color:var(--text2);margin-top:2px;}
+
+/* ===== QUIZ ===== */
+#quiz{background:var(--bg);}
+.quiz-header{
+  display:flex;align-items:center;gap:10px;
+  padding:calc(12px + env(safe-area-inset-top)) 16px 10px;
+  flex-shrink:0;
+}
+.quiz-back{background:none;border:none;font-size:20px;font-weight:700;cursor:pointer;-webkit-appearance:none;color:var(--phy);padding:4px 8px;}
+.progress-wrap{flex:1;}
+.progress-text{font-size:11px;color:var(--text2);margin-bottom:4px;}
+.progress-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--phy);border-radius:2px;transition:width .3s;}
+.score-badge{font-size:14px;font-weight:800;color:var(--phy);}
+.timer-bar-wrap{height:3px;background:var(--surface2);flex-shrink:0;}
+.timer-bar-fill{height:100%;background:var(--phy);transition:width .1s linear;}
+.combo-banner{text-align:center;font-size:13px;font-weight:800;color:var(--combo);min-height:20px;flex-shrink:0;padding:0 16px;}
+.quiz-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px calc(20px + env(safe-area-inset-bottom));}
+.question-card{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+.question-level{font-size:11px;font-weight:700;margin-bottom:8px;}
+.question-text{font-size:15px;line-height:1.6;font-weight:600;-webkit-user-select:text;user-select:text;}
+.choices{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+.choice-btn{
+  background:var(--surface);border:1.5px solid var(--surface2);
+  border-radius:12px;padding:14px 16px;
+  font-size:14px;line-height:1.4;text-align:left;
+  cursor:pointer;-webkit-appearance:none;color:var(--text);
+  font-family:inherit;transition:background .1s;
+  -webkit-user-select:text;user-select:text;
+}
+.choice-btn.correct{background:#0d2018;border-color:var(--correct);color:var(--correct);}
+.choice-btn.wrong{background:#200d0d;border-color:var(--wrong);color:var(--wrong);}
+.choice-btn:disabled{cursor:default;}
+.retry-msg{text-align:center;color:var(--wrong);font-size:13px;font-weight:700;min-height:20px;margin-bottom:4px;}
+.explanation-card{
+  background:var(--surface2);border-radius:12px;padding:14px;
+  display:none;margin-bottom:12px;
+}
+.explanation-card.show{display:block;}
+.exp-label{font-size:10px;font-weight:800;color:var(--phy);letter-spacing:.1em;margin-bottom:6px;}
+.exp-text{font-size:13px;line-height:1.6;color:var(--text);-webkit-user-select:text;user-select:text;}
+.next-btn{
+  background:var(--phy);border:none;border-radius:var(--radius);
+  padding:16px;width:100%;font-size:15px;font-weight:800;
+  color:#fff;cursor:pointer;-webkit-appearance:none;
+  display:none;font-family:inherit;
+}
+.next-btn.show{display:block;}
+
+/* ===== RESULT ===== */
+#result{align-items:center;padding:calc(32px + env(safe-area-inset-top)) 20px calc(32px + env(safe-area-inset-bottom));gap:16px;}
+.result-icon{font-size:64px;}
+.result-title{font-size:24px;font-weight:800;}
+.result-score{font-size:48px;font-weight:900;color:var(--phy);}
+.result-sub{font-size:13px;color:var(--text2);}
+.result-cards{display:flex;gap:12px;width:100%;max-width:380px;}
+.result-card{flex:1;background:var(--surface);border-radius:12px;padding:14px;text-align:center;}
+.result-card-val{font-size:22px;font-weight:800;color:var(--phy);}
+.result-card-label{font-size:10px;color:var(--text2);margin-top:2px;}
+.result-btns{display:flex;flex-direction:column;gap:10px;width:100%;max-width:380px;}
+.btn-primary{background:var(--phy);border:none;border-radius:var(--radius);padding:16px;font-size:15px;font-weight:800;color:#fff;cursor:pointer;-webkit-appearance:none;}
+.btn-secondary{background:var(--surface);border:none;border-radius:var(--radius);padding:16px;font-size:15px;font-weight:700;color:var(--text);cursor:pointer;-webkit-appearance:none;}
+
+/* ===== WEAK (苦手克服) ===== */
+.weak-btn{
+  background:linear-gradient(135deg,#1a0a0a,#2a1010);
+  border:1.5px solid var(--wrong);border-radius:var(--radius);
+  padding:14px 16px;
+  display:none;align-items:center;gap:12px;
+  cursor:pointer;text-align:left;width:100%;max-width:380px;-webkit-appearance:none;
+  font-family:inherit;
+}
+.weak-btn.visible{display:flex;}
+.weak-btn-icon{font-size:24px;flex-shrink:0;}
+.weak-btn-info{flex:1;}
+.weak-btn-title{font-size:15px;font-weight:800;color:var(--wrong);}
+.weak-btn-sub{font-size:11px;color:var(--text2);margin-top:3px;}
+.weak-btn-count{font-size:11px;color:var(--wrong);margin-top:3px;font-weight:700;}
+.weak-btn-arrow{font-size:20px;color:var(--wrong);}
+
+/* ===== QUIT MODAL ===== */
+.quit-overlay{display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
+.quit-overlay.active{display:flex;}
+.quit-modal{background:var(--surface2);border-radius:20px;padding:28px 24px 20px;width:calc(100% - 48px);max-width:320px;text-align:center;}
+.quit-modal-title{font-size:17px;font-weight:700;margin-bottom:8px;}
+.quit-modal-sub{font-size:13px;color:var(--text2);margin-bottom:24px;}
+.quit-modal-btns{display:flex;flex-direction:column;gap:10px;}
+.quit-modal-btns button{border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;-webkit-appearance:none;}
+.quit-yes{background:var(--wrong);color:#fff;}
+.quit-no{background:var(--surface);color:var(--text);}
+</style>
+</head>
+<body>
+
+<!-- TOP: 単元選択 -->
+<div id="top" class="screen active">
+  <div class="app-logo">⚡</div>
+  <div class="app-title"><span>物理ドリル</span></div>
+  <div class="exam-badge">📅 期末テスト対策 12/9(水)</div>
+  <div class="unit-cards">
+    <button class="unit-card" onclick="selectUnit('sound')">
+      <span class="unit-card-icon">🔊</span>
+      <div class="unit-card-info">
+        <div class="unit-card-name">音の性質</div>
+        <div class="unit-card-sub">音の伝わり方・振幅と振動数・波形</div>
+        <div class="unit-card-count" id="count-sound"></div>
+      </div>
+      <span class="unit-card-arrow">›</span>
+    </button>
+    <button class="unit-card" onclick="selectUnit('force')">
+      <span class="unit-card-icon">💪</span>
+      <div class="unit-card-info">
+        <div class="unit-card-name">力のはたらき</div>
+        <div class="unit-card-sub">力の種類・フックの法則・力のつり合い</div>
+        <div class="unit-card-count" id="count-force"></div>
+      </div>
+      <span class="unit-card-arrow">›</span>
+    </button>
+    <button class="unit-card" onclick="selectUnit('wave')">
+      <span class="unit-card-icon">〜</span>
+      <div class="unit-card-info">
+        <div class="unit-card-name">波の性質・発展</div>
+        <div class="unit-card-sub">反射・屈折・回折・弦の振動・ドップラー</div>
+        <div class="unit-card-count" id="count-wave"></div>
+      </div>
+      <span class="unit-card-arrow">›</span>
+    </button>
+  </div>
+  <button class="all-btn" onclick="selectUnit('all')">⚡ 全問シャッフル</button>
+  <button class="weak-btn" id="top-weak-btn" onclick="startWeak()">
+    <span class="weak-btn-icon">🔥</span>
+    <div class="weak-btn-info">
+      <div class="weak-btn-title">苦手克服モード</div>
+      <div class="weak-btn-sub">間違えた問題を集中特訓</div>
+      <div class="weak-btn-count" id="top-weak-count"></div>
+    </div>
+    <span class="weak-btn-arrow">›</span>
+  </button>
+</div>
+
+<!-- HOME: レベル選択 -->
+<div id="home" class="screen">
+  <button class="back-btn" onclick="showTop()">‹ 単元選択</button>
+  <div class="app-logo" id="home-icon"></div>
+  <div class="home-title" id="home-title"></div>
+  <div class="home-sub" id="home-sub"></div>
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-val" id="h-correct">0</div><div class="stat-label">正解数</div></div>
+    <div class="stat-box"><div class="stat-val" id="h-total">0</div><div class="stat-label">挑戦数</div></div>
+    <div class="stat-box"><div class="stat-val" id="h-rate">-</div><div class="stat-label">正答率</div></div>
+  </div>
+  <div class="level-cards">
+    <button class="level-card" onclick="startQuiz('BASIC')">
+      <div class="level-dot basic"></div>
+      <div class="level-info"><div class="level-name">🟢 BASIC</div><div class="level-sub">基本問題</div></div>
+      <span class="level-arrow">›</span>
+    </button>
+    <button class="level-card" onclick="startQuiz('STANDARD')">
+      <div class="level-dot standard"></div>
+      <div class="level-info"><div class="level-name">🔵 STANDARD</div><div class="level-sub">練習問題・STEP演習</div></div>
+      <span class="level-arrow">›</span>
+    </button>
+    <button class="level-card" onclick="startQuiz('ADVANCED')">
+      <div class="level-dot advanced"></div>
+      <div class="level-info"><div class="level-name">🟡 ADVANCED</div><div class="level-sub">活用問題・高校へのアクセス</div></div>
+      <span class="level-arrow">›</span>
+    </button>
+    <button class="level-card" onclick="startQuiz('ALL')">
+      <div class="level-dot all"></div>
+      <div class="level-info"><div class="level-name">⚡ 全レベル</div><div class="level-sub">全問シャッフル</div></div>
+      <span class="level-arrow">›</span>
+    </button>
+  </div>
+  <button class="weak-btn" id="weak-btn" onclick="startWeak()">
+    <span class="weak-btn-icon">🔥</span>
+    <div class="weak-btn-info">
+      <div class="weak-btn-title">苦手克服モード</div>
+      <div class="weak-btn-sub">間違えた問題を集中特訓</div>
+      <div class="weak-btn-count" id="weak-count"></div>
+    </div>
+    <span class="weak-btn-arrow">›</span>
+  </button>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz" class="screen">
+  <div class="quiz-header">
+    <button class="quiz-back" onclick="confirmQuit()">✕</button>
+    <div class="progress-wrap">
+      <div class="progress-text" id="progress-text"></div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="score-badge" id="score-badge">0pt</div>
+  </div>
+  <div class="timer-bar-wrap"><div class="timer-bar-fill" id="timer-bar" style="width:100%"></div></div>
+  <div class="combo-banner" id="combo-banner"></div>
+  <div class="quiz-body">
+    <div class="question-card">
+      <div class="question-level" id="q-level"></div>
+      <div class="question-text" id="q-text"></div>
+    </div>
+    <div class="choices" id="choices"></div>
+    <div class="retry-msg" id="retry-msg"></div>
+    <div class="explanation-card" id="explanation-card">
+      <div class="exp-label">EXPLANATION</div>
+      <div class="exp-text" id="exp-text"></div>
+    </div>
+    <button class="next-btn" id="next-btn" onclick="nextQ()">次の問題 →</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="screen">
+  <div class="result-icon" id="result-icon"></div>
+  <div class="result-title" id="result-title"></div>
+  <div class="result-score" id="result-score"></div>
+  <div class="result-sub" id="result-sub"></div>
+  <div class="result-cards">
+    <div class="result-card"><div class="result-card-val" id="r-correct"></div><div class="result-card-label">正解</div></div>
+    <div class="result-card"><div class="result-card-val" id="r-wrong"></div><div class="result-card-label">不正解</div></div>
+    <div class="result-card"><div class="result-card-val" id="r-rate"></div><div class="result-card-label">正答率</div></div>
+  </div>
+  <div class="result-btns">
+    <button class="btn-primary" onclick="retryQuiz()">もう一度</button>
+    <button class="btn-secondary" id="result-weak-btn" onclick="startWeak()" style="display:none;background:#2a1010;color:var(--wrong);border:1.5px solid var(--wrong);">🔥 間違えた問題を特訓</button>
+    <button class="btn-secondary" onclick="showTop()">単元選択へ戻る</button>
+  </div>
+</div>
+
+<!-- QUIT MODAL -->
+<div class="quit-overlay" id="quit-overlay">
+  <div class="quit-modal">
+    <div class="quit-modal-title">クイズを終了しますか？</div>
+    <div class="quit-modal-sub">進捗は保存されます</div>
+    <div class="quit-modal-btns">
+      <button class="quit-yes" onclick="doQuit()">終了する</button>
+      <button class="quit-no" onclick="cancelQuit()">続ける</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 問題データ =====
+
+const Q = {
+// ===== 音の性質 BASIC (P22-24基本問題) =====
+sound_basic: [
+  {id:'sb01',q:'音を出している物体はどのような状態にあるか。',choices:['静止している','振動している','加速している','回転している'],ans:1,exp:'音は物体の振動によって発生する。音さや弦をはじくと振動して音が出る。'},
+  {id:'sb02',q:'振動して音を発生する物体を何というか。',choices:['振動体','音源（発音体）','共鳴体','反射体'],ans:1,exp:'音源（発音体）は振動して音を発生する物体。音さ、弦、声帯など。'},
+  {id:'sb03',q:'振動が次々に伝わる現象を何というか。',choices:['振動','波','音','共鳴'],ans:1,exp:'波は振動が次々に伝わる現象。音は空気中を波として伝わる。'},
+  {id:'sb04',q:'音が空気中を伝わるとき、空気はどうなっているか。',choices:['空気自体が移動する','空気が振動している','空気が消える','空気が圧縮されたままになる'],ans:1,exp:'音が空気中を伝わるとき、空気そのものは移動せず、振動が伝わっていく。'},
+  {id:'sb05',q:'音は真空中を伝わるか。',choices:['伝わる','伝わらない','条件による','光より速く伝わる'],ans:1,exp:'波を伝えるものがない真空中では、音は伝わらない。'},
+  {id:'sb06',q:'音は水中や金属中を伝わるか。',choices:['伝わらない','伝わる','液体のみ伝わる','固体のみ伝わる'],ans:1,exp:'音は気体だけでなく、水などの液体、金属などの固体も伝わる。'},
+  {id:'sb07',q:'音が空気中を伝わる速さは、1秒間に約何mか。',choices:['約34m','約340m','約3400m','約34000m'],ans:1,exp:'音の空気中での速さは約340m/s。水中では約1500m/s。'},
+  {id:'sb08',q:'音と光の速さを比べたとき、速いのはどちらか。',choices:['音','光','同じ','条件による'],ans:1,exp:'光の速さは約30万km/sで、音（約340m/s）より圧倒的に速い。だから雷は光が先に見える。'},
+  {id:'sb09',q:'音の速さを求める式として正しいのはどれか。',choices:['音の速さ=音源までの距離÷音が伝わる時間','音の速さ=音が伝わる時間÷音源までの距離','音の速さ=距離×時間','音の速さ=距離+時間'],ans:0,exp:'音の速さ[m/s]=音源までの距離[m]÷音が伝わる時間[s]'},
+  {id:'sb10',q:'音源の振動の振れ幅を何というか。',choices:['振動数','振幅','周期','波長'],ans:1,exp:'振幅は音源の振動の振れ幅。振幅が大きいほど音は大きい。'},
+  {id:'sb11',q:'音源が1秒間に振動する回数を何というか。',choices:['振幅','振動数','周期','波長'],ans:1,exp:'振動数は1秒間に振動する回数。単位はヘルツ(Hz)。振動数が多いほど音は高い。'},
+  {id:'sb12',q:'振動数の単位であるHzは何と読むか。',choices:['ハーツ','ヘルツ','ホルツ','ヘリウム'],ans:1,exp:'Hz（ヘルツ）は振動数の単位。1Hzは1秒間に1回振動することを表す。'},
+  {id:'sb13',q:'弦をはじく強さを変えると、弦の振幅と振動数のどちらが変わるか。',choices:['振動数','振幅','両方','どちらも変わらない'],ans:1,exp:'弦をはじく強さ（振幅）を変えると音の大きさが変わる。強くはじくほど振幅が大きく音が大きい。'},
+  {id:'sb14',q:'弦の長さや太さ、弦を張る強さを変えると、弦の振幅と振動数のどちらが変わるか。',choices:['振幅','振動数','両方','どちらも変わらない'],ans:1,exp:'弦の長さ・太さ・張り方を変えると振動数が変わり、音の高さが変わる。'},
+  {id:'sb15',q:'音源の振幅が大きいほど、音はどうなるか。',choices:['高くなる','低くなる','大きくなる','小さくなる'],ans:2,exp:'音の大きさは振幅によって決まる。振幅が大きいほど音は大きい。'},
+  {id:'sb16',q:'音源の振動数が多いほど、音はどうなるか。',choices:['大きくなる','小さくなる','高くなる','低くなる'],ans:2,exp:'音の高さは振動数によって決まる。振動数が多いほど音は高い。'},
+  {id:'sb17',q:'オシロスコープで見た波形で、波の高さ(振幅)が表すものは何か。',choices:['音の高さ','音の大きさ','音の速さ','音の向き'],ans:1,exp:'オシロスコープの縦軸は振幅を表す。波が高いほど音が大きい。'},
+  {id:'sb18',q:'オシロスコープで、一定時間に波をくり返す数(B)が表すものは何か。',choices:['振幅','振動数','周期','波長'],ans:1,exp:'一定時間内の波の数が振動数を表す。波の数が多いほど振動数が大きく音が高い。'},
+],
+
+// ===== 音の性質 STANDARD (P25-27練習問題・P28STEP演習) =====
+sound_standard: [
+  {id:'ss01',q:'音を出している物体（音源）が振動していて、そのまわりの（①）が振動して、（②）となって広がり、耳まで届いて音が聞こえる。①②に入る語句の組み合わせはどれか。',choices:['①水・②振動','①空気・②波','①真空・②電磁波','①光・②粒子'],ans:1,exp:'音源が振動→まわりの空気が振動→波となって広がる→耳の鼓膜を振動させる→音が聞こえる。'},
+  {id:'ss02',q:'音の性質について正しいものをすべて選べ。ア:音は気体しか伝わらない。イ:音は水中や金属中も伝わる。ウ:空気中を伝わるとき空気が移動する。エ:音は真空中では伝わらない。',choices:['アとウ','アとエ','イとエ','ウとエ'],ans:2,exp:'イ：音は固体・液体・気体どこでも伝わる。エ：真空中では伝わらない。ア・ウは誤り。'},
+  {id:'ss03',q:'真空容器からだんだん空気を抜くと、ブザーの音はどうなるか。',choices:['大きくなる','変わらない','小さくなった','聞こえなくなる'],ans:2,exp:'空気を抜くと音を伝える物質が減り、音は伝わりにくくなって小さくなる。完全な真空では聞こえない。'},
+  {id:'ss04',q:'花火の音が見えてから1.8秒後に聞こえた。620mを音が伝わった速さは何m/sか。（四捨五入して整数で）',choices:['320m/s','344m/s','400m/s','310m/s'],ans:1,exp:'速さ=距離÷時間=620m÷1.8s≒344m/s（四捨五入して344m/s）'},
+  {id:'ss05',q:'A地点で号砲を鳴らし、B地点で音が聞こえるまでの時間を測定すると0.6秒だった。AB間の距離は何mか（音の速さ=340m/s）。',choices:['204m','240m','200m','340m'],ans:0,exp:'距離=速さ×時間=340m/s×0.6s=204m'},
+  {id:'ss06',q:'弦の張りを強くして、同じ強さではじいた。実験1で最初に出した音と比べて音はどのように変化したか。',choices:['大きくなった','小さくなった','高くなった','低くなった'],ans:2,exp:'弦の張りを強くすると振動数が多くなり、音が高くなる。強さを変えないので大きさは変わらない。'},
+  {id:'ss07',q:'振動する弦の長さを長くし、振幅を大きくして音を出した。最初の音より低く、大きい音が出た。弦をどう変えたか。',choices:['弦を短くして振幅を大きくした','弦を長くして振幅を大きくした','弦を短くして振幅を小さくした','弦を長くして振幅を小さくした'],ans:1,exp:'弦を長くすると振動数が減り音が低くなる。振幅を大きくすると音が大きくなる。'},
+  {id:'ss08',q:'試験管の口に息をふきかけたとき、もっとも高い音が出るのはA〜F（水が少ない順）のどれか。',choices:['A（水が最も多い）','F（水が最も少ない）','C（中間）','すべて同じ'],ans:1,exp:'息をふきかけると管の中の空気が振動する。空気の柱が短いほど振動数が多く音が高い。水が少ないFが最も空気柱が短く高い音。'},
+  {id:'ss09',q:'試験管の口付近を棒でたたいたとき、もっとも高い音が出るのはどれか（A=水が最も多い、F=水が最も少ない）。',choices:['A（水が最も多い）','F（水が最も少ない）','C（中間）','すべて同じ'],ans:0,exp:'棒でたたくと試験管（ガラス）が振動する。水が多いほどガラスが振動しにくくなり、振動数が少なくなって音が低い。水が最も少ないAが最も振動しやすく音が高い。—— 注意:水が多い=空気柱長→息で吹くと低い、水が多い=ガラス振動しにくい→たたくと低い。Aが最も水が多いので棒でたたくと最も高い。'},
+  {id:'ss10',q:'図1のような音Bの波形を、図1より強くたたいたときのようすを示しているのは図2か図3か（図2は振幅大、図3は振動数多）。',choices:['図2（振幅大）','図3（振動数多）','どちらでもない','両方同じ'],ans:0,exp:'強くたたくと振幅が大きくなり音が大きくなる。振動数（音の高さ）は変わらない。よって図2（振幅が大きい）。'},
+  {id:'ss11',q:'図2と図3を比べたとき、振動数と音の高さについて正しいものはどれか。（図2:振幅大、振動数3回/図3:振幅大、振動数4回）',choices:['図2のほうが振動数が多く、音が高い','図2のほうが振動数が少なく、音が低い','図2のほうが振動数が少なく、音が高い','図2のほうが振動数が多く、音が低い'],ans:1,exp:'図2は一定時間内の振動が3回、図3は4回なので、図3のほうが振動数が多く音が高い。よって図2のほうが振動数が少なく音が低い。'},
+  {id:'ss12',q:'図の音の波形は0.008秒で1回振動している。この音の振動数は何Hzか。',choices:['80Hz','100Hz','125Hz','150Hz'],ans:2,exp:'振動数=振動した回数÷振動した時間=1回÷0.008s=125Hz'},
+  {id:'ss13',q:'花火の音が聞こえてから1秒後に校舎の壁で反射した音が聞こえた。校舎の壁から観測地点までの距離は何mか（音の速さ=340m/s）。',choices:['119m','170m','204m','340m'],ans:0,exp:'反射した音が往復した距離=340m/s×0.7s=238m。片道は238m÷2=119m。（校舎まで0.7秒×340=238m/2=119m）'},
+  {id:'ss14',q:'図2で、図2の波が示す音の振動数は150Hzである。図3の波が示す振動数は何Hzか（図2と図3の横軸の目盛りは等しく、図3は図2の2倍の速さで振動している）。',choices:['75Hz','150Hz','300Hz','600Hz'],ans:2,exp:'図3は図2の2倍の振動数なので、150Hz×2=300Hz'},
+],
+
+// ===== 音の性質 ADVANCED (P29活用問題・計算) =====
+sound_advanced: [
+  {id:'sa01',q:'上空で花火が開いた瞬間から、花火の音が聞こえるまでの時間をはかると12秒だった。音の速さは図1より340m/sとする。時間をはかった地点から花火までの距離は何mか。',choices:['2040m','3000m','4080m','5000m'],ans:2,exp:'距離=速さ×時間=340m/s×12s=4080m'},
+  {id:'sa02',q:'船から出した超音波が海底で反射して船底に戻ってくるまでに0.4秒かかった。海水中の音の速さを1500m/sとすると、海底までの距離は何mか。',choices:['150m','300m','600m','750m'],ans:1,exp:'往復の距離=1500m/s×0.4s=600m。片道は600m÷2=300m'},
+  {id:'sa03',q:'AさんとBさんは75m離れたがけに向かって一直線に並んだ。Aさんが号砲を1回鳴らした。Bさんが号砲の煙を見てから、がけに反射した号砲の音を聞くまでの時間が1.4秒だった。AさんとBさんの間の距離は何mか（音の速さ=340m/s）。',choices:['150m','200m','326m','400m'],ans:2,exp:'がけに反射してBさんに届くまでに音が伝わった距離=340m/s×1.4s=476m。音がAさんとがけの間を往復した距離=75m×2=150m。AさんとBさんの間の距離=476m-150m=326m'},
+  {id:'sa04',q:'モノコードの弦ABの中央をはじいたところ、波形が観察された。横軸の1目盛り0.0005秒とすると、この弦の振動数は何Hzか（図2の波形より1回振動に0.004秒かかる）。',choices:['125Hz','200Hz','250Hz','400Hz'],ans:2,exp:'1回振動するのにかかる時間は0.0005秒×8=0.004秒。振動数=1÷0.004s=250Hz'},
+  {id:'sa05',q:'木片（ことじ）を動かして弦ABの長さを1.5倍にし、同じ強さではじいた。このときのオシロスコープの波形はどうなるか。',choices:['振幅が大きくなり振動数が多い','振幅は同じで振動数が少ない','振幅が小さくなり振動数が多い','振幅は大きくなり振動数が少ない'],ans:1,exp:'同じ強さではじくので振幅は同じ。弦を長くすると振動数が少なくなる（音が低くなる）。'},
+],
+
+// ===== 力のはたらき BASIC (P30-32基本問題) =====
+force_basic: [
+  {id:'fb01',q:'力には、物体の（　）を変える、物体を（　）する、物体の運動の（　）を変えるはたらきがある。3つの空欄に入る語句は？',choices:['形・動かす・速さ','形・支える・速さ','重さ・支える・向き','形・支える・向き'],ans:1,exp:'力の3つのはたらき：①物体の形を変える ②物体を支える ③物体の運動の速さや向きを変える'},
+  {id:'fb02',q:'変形した物体が、もとの形に戻ろうとして生じる力を何というか。',choices:['重力','摩擦力','弾性力（弾性の力）','磁力'],ans:2,exp:'弾性力（弾性の力）は物体が変形したとき、もとの形に戻ろうとして生じる力。ばねや輪ゴムがこれ。'},
+  {id:'fb03',q:'物体がふれ合っている面と面の間で、物体の運動を妨げるようにはたらく力を何というか。',choices:['重力','垂直抗力','弾性力','摩擦力'],ans:3,exp:'摩擦力は物体がふれ合っている面と面との間で、物体の運動を妨げるようにはたらく力。'},
+  {id:'fb04',q:'磁石のN極とN極の間にはどのような力がはたらくか。',choices:['引き合う力','しりぞけ合う力','重力','弾性力'],ans:1,exp:'同じ極どうしはしりぞけ合い、異なる極どうしは引き合う。N極とN極はしりぞけ合う。'},
+  {id:'fb05',q:'地球がその中心に向かって物体を引く力を何というか。',choices:['磁力','弾性力','摩擦力','重力'],ans:3,exp:'重力は地球がその中心に向かって物体を引く力。地球上のすべての物体にはたらく。'},
+  {id:'fb06',q:'力の大きさの単位は何か。',choices:['g（グラム）','kg（キログラム）','N（ニュートン）','Pa（パスカル）'],ans:2,exp:'力の単位はニュートン（記号N）。1Nは地球上で100gの物体にはたらく重力の大きさとほぼ等しい。'},
+  {id:'fb07',q:'1kgの物体にはたらく重力の大きさは、およそ何Nか。',choices:['1N','5N','10N','100N'],ans:2,exp:'100gの物体にはたらく重力が約1Nなので、1kg（=1000g）では約10N。'},
+  {id:'fb08',q:'ばねにはたらく力の大きさとばねののびは比例する。このような関係を何の法則というか。',choices:['アルキメデスの法則','フックの法則','ニュートンの法則','慣性の法則'],ans:1,exp:'フックの法則：ばねにはたらく力の大きさとばねののびは比例する。ばねばかりはこれを利用した器具。'},
+  {id:'fb09',q:'同じばねにはたらく力の大きさが2倍になると、ばねののびはどうなるか。',choices:['変わらない','2分の1になる','2倍になる','4倍になる'],ans:2,exp:'フックの法則より、力が2倍になると、ばねののびも2倍になる。'},
+  {id:'fb10',q:'矢印の始点が表すものは何か。',choices:['力の向き','力の大きさ','力のはたらく点（作用点）','力の種類'],ans:2,exp:'力を矢印で表すとき：作用点→矢印の始点、力の向き→矢印の向き、力の大きさ→矢印の長さ。'},
+  {id:'fb11',q:'場所によって変わらない、物体そのものの量を何というか。',choices:['重さ','重力','質量','密度'],ans:2,exp:'質量は場所によって変わらない物体そのものの量。単位はg（グラム）やkg。上皿てんびんで測る。'},
+  {id:'fb12',q:'地球上で上皿てんびんで30gの分銅とつり合った物体を、月面上で上皿てんびんを使ってはかると何gの分銅とつり合うか。',choices:['5g','6g','30g','180g'],ans:2,exp:'質量は場所によって変わらない。月面上でも同じ30gの分銅とつり合う。（重さは1/6になるが質量は変わらない）'},
+  {id:'fb13',q:'1つの物体にいくつかの力がはたらいていても物体が動かないとき、物体にはたらいている力はどうなっているというか。',choices:['平行である','等しい','つり合っている','反対である'],ans:2,exp:'物体が動かないとき、物体にはたらく力はつり合っているという。'},
+  {id:'fb14',q:'2力がつり合うとき、2力は一直線上にあり、向きは（　）で、大きさは（　）。',choices:['同じ・等しい','反対（逆）・等しい','反対（逆）・異なる','同じ・異なる'],ans:1,exp:'2力のつり合いの3条件：①2力が一直線上にある ②2力の向きが反対（逆） ③2力の大きさが等しい'},
+  {id:'fb15',q:'水平な台の上で静止している物体にはたらく重力と、つり合っているのは何という力か。',choices:['摩擦力','磁力','弾性力','垂直抗力'],ans:3,exp:'垂直抗力は面の上に置いた物体が面から垂直に受ける力。静止している物体では重力と垂直抗力がつり合っている。'},
+  {id:'fb16',q:'水平な床の上の物体を水平に押しても動かないとき、物体を押す力とつり合っているのは何という力か。',choices:['重力','垂直抗力','摩擦力','弾性力'],ans:2,exp:'水平に押しても動かないとき、押す力と摩擦力がつり合っている。'},
+],
+
+// ===== 力のはたらき STANDARD (P33-36練習問題・STEP演習) =====
+force_standard: [
+  {id:'fs01',q:'スタンドの支持棒に40gのおもりを糸でつり下げて静止させた。方眼の1目盛りを0.2N、100gの物体にはたらく重力を1Nとする。おもりにはたらく重力の大きさは何Nか。',choices:['0.2N','0.4N','0.8N','1.0N'],ans:1,exp:'1N×(40g÷100g)=0.4N'},
+  {id:'fs02',q:'0.5Nで2cmのびるばねAを、図4のように3Nで引いた。ばねAにはたらく力の大きさは何Nか。',choices:['1.5N','2N','3N','6N'],ans:2,exp:'一方の端を固定してばねを引いてもどちらかの端から引いても、ばねにはたらく力は同じ。3N。'},
+  {id:'fs03',q:'図4で3Nで引いたとき、ばねAののびは何cmか（0.5Nで2cmのびるばね）。',choices:['6cm','8cm','10cm','12cm'],ans:3,exp:'2cm×(3N÷0.5N)=2cm×6=12cm'},
+  {id:'fs04',q:'100gのおもりをばねにつり下げ、ばねのびを調べた。60gのおもりをばねにつるすと、ばねのびは何cmか（グラフから：40gで4cm）。',choices:['4cm','6cm','8cm','10cm'],ans:1,exp:'フックの法則より比例する。40g→4cmなので、60g→4cm×(60÷40)=6cm'},
+  {id:'fs05',q:'ばねに12cmのびたとき、手がばねに加えた力は何Nか（グラフから：40g=4cm、100g=1N）。',choices:['0.6N','0.9N','1.2N','1.5N'],ans:1,exp:'60gのおもりをつるしたとき8cmのびる。12cm÷8cm×0.6N=0.9N'},
+  {id:'fs06',q:'地球上で上皿てんびんで物体Aを測定すると、120gの分銅とつり合った。地球上でばねばかりで測定すると何Nを示すか（100g=1N）。',choices:['0.2N','0.6N','1.2N','2.0N'],ans:2,exp:'1N×(120g÷100g)=1.2N'},
+  {id:'fs07',q:'月面上で物体Aを上皿てんびんで測定すると、何gの分銅とつり合うか。',choices:['20g','60g','120g','720g'],ans:2,exp:'質量は場所によって変わらない。月面上でも120gの分銅とつり合う。'},
+  {id:'fs08',q:'月面上で物体Aをばねばかりで測定すると何Nを示すか（月の重力は地球の1/6）。',choices:['0.1N','0.2N','0.6N','1.2N'],ans:1,exp:'月面上の重力は地球の1/6なので、1.2N÷6=0.2N'},
+  {id:'fs09',q:'月面上で重さ0.6Nを示した物体Bの質量は何gか（月の重力は地球の1/6、100g=1N）。',choices:['60g','100g','200g','360g'],ans:3,exp:'月面上0.6Nなので地球上では0.6N×6=3.6N。質量は100g×(3.6N÷1N)=360g'},
+  {id:'fs10',q:'右のア〜エは、1つの物体に同じ大きさの2力がはたらいているようすを表している。2力がつり合っていないものはどれか（ウは2力が一直線上にない）。',choices:['ア','イ','ウ','エ'],ans:2,exp:'2力がつり合うには①一直線上にある②向きが反対③大きさが等しい、の3条件が必要。ウは一直線上にないのでつり合わない。'},
+  {id:'fs11',q:'2力がつり合っていないのはなぜか（ウの場合）。',choices:['大きさが違うから','向きが同じだから','2力が一直線上にないから','力が弱すぎるから'],ans:2,exp:'2力が一直線上にないと、物体は回転してしまいつり合わない。'},
+  {id:'fs12',q:'ばねYのびが9cmのときのおもりの質量は何gか（グラフから：ばねYはのびが12cmのとき80g）。',choices:['40g','60g','75g','90g'],ans:1,exp:'9cm:a=12cm:80g よって a=9×80÷12=60g'},
+  {id:'fs13',q:'ばねXとばねYのそれぞれに同じ質量のおもりをつり下げたところ、ばねXは4cmのびた。ばねYは何cmのびるか（グラフからばねXが4cmのときおもりは60g、ばねYは60gのとき9cmのびる）。',choices:['4cm','6cm','9cm','12cm'],ans:2,exp:'ばねXが4cmのびるとき、おもりの質量は60g。同じ60gをばねYにつるすと、グラフから9cm。'},
+  {id:'fs14',q:'質量200gの物体に取り付けたばねを2Nの力で上向きに引くと、台ばかりは何gを示すか（100g=1N）。',choices:['0g','75g','200g','400g'],ans:1,exp:'物体にはたらく重力2N、ばねが2N引くので、台ばかりが支える力=2N-2N+0.75Nの部分...台ばかりの値=物体の重さ-ばねが引く力=2N-1.25N=0.75N→75g'},
+],
+
+// ===== 力のはたらき ADVANCED (P36-37活用問題) =====
+force_advanced: [
+  {id:'fa01',q:'ばねは1.0Nの力で1.0cmのびる。図2でばねが8.0cmのびているとき、ばねを引く力の大きさは何Nか。',choices:['1.0N','4.0N','8.0N','16.0N'],ans:2,exp:'フックの法則より：1.0N:1.0cm=x:8.0cm → x=8.0N'},
+  {id:'fa02',q:'生徒Bが両側からばねを引いているとき（図3）、生徒Aが一人でばねを引くときと同じ力が出ている。生徒Bがばねを引く力は何Nか（図2と同じばね）。',choices:['4.0N','6.0N','8.0N','16.0N'],ans:2,exp:'ばねを両側から引いても壁から引いても、ばねにはたらく力は同じ。図2と同じ8.0N。'},
+  {id:'fa03',q:'磁石Aと磁石Bの間の距離が3.5cmのとき、台ばかりの値が260gで、距離4.5cmのとき200gだった。手が磁石Aを押す力の大きさは何Nか（100g=1N）。',choices:['0.3N','0.6N','1.0N','2.6N'],ans:1,exp:'距離3.5cmのときと4.5cmのときで台ばかりの値が60g増加（260g-200g=60g）しているので、手が磁石Aを押す力は60gにはたらく重力0.6N。'},
+],
+
+// ===== 波の性質 BASIC (P48-49Aトレーニング問題基本) =====
+wave_basic: [
+  {id:'wb01',q:'音がかたい物体に当たってはね返る現象を音の何というか。',choices:['屈折','回折','干渉','反射'],ans:3,exp:'音の反射：音がかたい物体に当たってはね返る現象。山に向かって声を出すとこだまが聞こえる。'},
+  {id:'wb02',q:'同じ振動数の音が重なって強め合ったり、弱め合ったりする現象を何というか。',choices:['反射','屈折','干渉','回折'],ans:2,exp:'音の干渉：同じ振動数の音が重なって、強め合ったり弱め合ったりする現象。'},
+  {id:'wb03',q:'音が障害物の端からまわりこんで伝わる現象を音の何というか。',choices:['反射','干渉','回折','屈折'],ans:2,exp:'音の回折：音が障害物の端からまわりこんで伝わる現象。壁の向こうの会話が聞こえるのはこのため。'},
+  {id:'wb04',q:'気温が変わることで音の速さが変わり、音の進む方向が変わることを音の何というか。',choices:['反射','回折','干渉','屈折'],ans:3,exp:'音の屈折：気温が高いほど音は速く伝わるため、温度の異なる境界面で音が屈折する。夜に遠くの音が聞こえやすいのはこのため。'},
+  {id:'wb05',q:'次の文は音のどの性質と関係が深いか。「魚群探知機を使って、船上から捕獲したい魚までの距離を調べることができる。」',choices:['屈折','反射','干渉','回折'],ans:1,exp:'魚群探知機は音の反射を利用している。超音波を出して海底や魚に当たって戻ってくるまでの時間から距離を測る。'},
+  {id:'wb06',q:'ある点で生じた振動がまわりに伝わる現象を何というか。',choices:['音','光','波','力'],ans:2,exp:'波はある点で生じた振動がまわりに伝わる現象。音や地震によるゆれなども波である。'},
+  {id:'wb07',q:'媒質の振動方向が波の進行方向と垂直な波を何というか。',choices:['縦波','横波','音波','電磁波'],ans:1,exp:'横波は媒質の振動方向が波の進行方向と垂直な波。電磁波などがこれ。'},
+  {id:'wb08',q:'媒質の振動方向が波の進行方向と平行な波を何というか（音はこちら）。',choices:['横波','縦波（疎密波）','電磁波','定常波'],ans:1,exp:'縦波（疎密波）は媒質の振動方向が波の進行方向に平行な波。音はこの縦波である。'},
+  {id:'wb09',q:'波の山から山（谷から谷）までの距離を何というか。',choices:['振幅','波長','周期','振動数'],ans:1,exp:'波長は波の山と山、または谷と谷の距離。'},
+  {id:'wb10',q:'振動の中心からの位置のずれの最大値を何というか。',choices:['波長','周期','振幅','振動数'],ans:2,exp:'振幅は振動の中心からの位置のずれの最大値。波の高さ（深さ）。'},
+],
+
+// ===== 波の性質 STANDARD (P48-49B トレーニング問題) =====
+wave_standard: [
+  {id:'ws01',q:'弦Aを6秒間に2400回振動させた。弦Aの振動の周期は何秒か。',choices:['0.0015秒','0.0025秒','0.004秒','0.025秒'],ans:1,exp:'周期=1回振動する時間=6s÷2400回=0.0025s'},
+  {id:'ws02',q:'弦Aの振動数は何Hzか（6秒間に2400回振動）。',choices:['40Hz','200Hz','400Hz','2400Hz'],ans:2,exp:'振動数=振動した回数÷時間=2400回÷6s=400Hz'},
+  {id:'ws03',q:'弦Aを強くはじくと周期はどうなるか。',choices:['長くなる','短くなる','変わらない','2倍になる'],ans:2,exp:'強くはじくと振幅が大きくなって音が大きくなるが、周期（振動数・音の高さ）は変わらない。'},
+  {id:'ws04',q:'周期が弦Aの2倍の弦Bをはじいた。弦Bの振動数は何Hzか（弦Aは400Hz）。',choices:['100Hz','200Hz','400Hz','800Hz'],ans:1,exp:'周期が2倍になると振動数は1/2になる。400Hz÷2=200Hz'},
+  {id:'ws05',q:'振動数が弦Aの1/4の弦Cをはじいた。弦Cの周期は何秒か（弦Aは400Hz）。',choices:['0.0025秒','0.005秒','0.01秒','0.02秒'],ans:2,exp:'弦Cの振動数=400Hz×(1/4)=100Hz。周期=1÷100Hz=0.01s'},
+  {id:'ws06',q:'横波がx軸の正の向きに進んでいる。x=2cmのPからx=6cmのP\' までの時間が0.2秒。この波の振幅は何cmか（グラフより山の高さ=2cm）。',choices:['1cm','2cm','4cm','8cm'],ans:1,exp:'波の振幅は山の高さ（谷の深さ）=2cm'},
+  {id:'ws07',q:'同じ波で波長は何cmか（グラフから：山から山まで=8cm）。',choices:['2cm','4cm','8cm','16cm'],ans:2,exp:'波長は山から山（谷から谷）までの距離=8cm'},
+  {id:'ws08',q:'同じ波の速さは何cm/sか（x=2cmからx=6cmまで4cmを0.2秒かかる）。',choices:['10cm/s','20cm/s','40cm/s','80cm/s'],ans:1,exp:'速さ=距離÷時間=8cm÷0.4s=20cm/s（1波長進むのに0.4秒かかる）'},
+  {id:'ws09',q:'同じ波の振動数は何Hzか（速さ=20cm/s、波長=8cm）。',choices:['1.25Hz','2.5Hz','5Hz','10Hz'],ans:1,exp:'振動数=速さ÷波長=20cm/s÷8cm=2.5Hz'},
+],
+
+// ===== 波の性質 ADVANCED (P50-51D ドップラー効果) =====
+wave_advanced: [
+  {id:'wa01',q:'スピーカーで55Hzの音を出したところ、0.5mの弦が振動して基本振動が生じた。この弦の基本振動の波長は何mか。',choices:['0.5m','1.0m','2.0m','4.0m'],ans:1,exp:'基本振動では波長は弦の長さの2倍。0.5m×2=1.0m'},
+  {id:'wa02',q:'この弦を伝わる波の速さは何m/sか（振動数55Hz、波長1.0m）。',choices:['27.5m/s','55m/s','110m/s','220m/s'],ans:1,exp:'速さ=振動数×波長=55Hz×1.0m=55m/s'},
+  {id:'wa03',q:'2倍振動と3倍振動を作ったとき、それぞれの振動数は何Hzか（基本振動=55Hz）。',choices:['2倍振動:110Hz・3倍振動:165Hz','2倍振動:27.5Hz・3倍振動:18.3Hz','2倍振動:110Hz・3倍振動:220Hz','2倍振動:55Hz・3倍振動:110Hz'],ans:0,exp:'n倍振動の振動数=基本振動の振動数×n。2倍=55×2=110Hz、3倍=55×3=165Hz'},
+  {id:'wa04',q:'サイレンを鳴らしながら近づいてくる救急車の音は、実際より高く聞こえる。この現象を何というか。',choices:['波の干渉','波の回折','ドップラー効果','音の屈折'],ans:2,exp:'ドップラー効果：音源や観測者が動くことで、音の見かけの振動数が変化して聞こえる現象。近づくと高く、遠ざかると低く聞こえる。'},
+  {id:'wa05',q:'速さ10m/sで移動している電車が、170m先のAさんに振動数400Hzの警笛を3.4秒間鳴らした。Aさんは電車が警笛を鳴らし始めてから何秒後に警笛が聞こえ始めたか（音の速さ=340m/s）。',choices:['0.3秒後','0.5秒後','1.0秒後','1.5秒後'],ans:1,exp:'時間=距離÷速さ=170m÷340m/s=0.5秒後'},
+  {id:'wa06',q:'同じ問題で、警笛を鳴らし終わったとき、AさんとBの電車の間の距離は何mか（電車の速さ=10m/s、3.4秒鳴らす）。',choices:['68m','102m','136m','170m'],ans:2,exp:'電車が進んだ距離=10m/s×3.4s=34m。よってAさんと電車の距離=170m-34m=136m'},
+  {id:'wa07',q:'速さ20m/sで進む救急車が720Hzのサイレンを出している。救急車後方のサイレン音の波長は何mか（音の速さ=340m/s）。',choices:['0.3m','0.5m','0.75m','1.0m'],ans:1,exp:'後方の波長=（音の速さ+音源の速さ）÷振動数=(340+20)÷720=0.5m'},
+  {id:'wa08',q:'速さ20m/sで進む救急車が720Hzのサイレンを出している。救急車前方のAさん（追い越される側）に聞こえるサイレン音の振動数は何Hzか（音の速さ=340m/s）。',choices:['680Hz','720Hz','765Hz','800Hz'],ans:0,exp:'後方から遠ざかるAさんには: f\'=V/(V+v)×f=340/(340+20)×720=680Hz'},
+  {id:'wa09',q:'同じ救急車の前方のBさんに聞こえるサイレン音の振動数は何Hzか（音の速さ=340m/s）。',choices:['680Hz','720Hz','765Hz','800Hz'],ans:2,exp:'前方に向かって近づくBさんには: f\'=V/(V-v)×f=340/(340-20)×720=765Hz'},
+]
+};
+
+// ===== 状態管理 =====
+let currentUnit = '';
+let currentLevel = '';
+let quizQueue = [];
+let quizIdx = 0;
+let sessionPts = 0;
+let sessionCorrect = 0;
+let combo = 0;
+let answered = false;
+let firstMiss = false;
+let lastUnit = '';
+let lastLevel = '';
+let isWeakMode = false;
+
+// 苦手問題管理
+function loadWeak() {
+  try { return JSON.parse(localStorage.getItem('butsuri_weak')||'[]'); } catch(e){ return []; }
+}
+function saveWeak(arr) {
+  try { localStorage.setItem('butsuri_weak', JSON.stringify(arr)); } catch(e){}
+}
+function addWeak(id) {
+  const w = loadWeak();
+  if(!w.includes(id)) { w.push(id); saveWeak(w); }
+}
+function removeWeak(id) {
+  const w = loadWeak().filter(x=>x!==id);
+  saveWeak(w);
+}
+
+// localStorage
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem('butsuri_stats')||'{}'); } catch(e){ return {}; }
+}
+function saveStats(d) {
+  try { localStorage.setItem('butsuri_stats', JSON.stringify(d)); } catch(e){}
+}
+
+// ===== 画面切替 =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showTop() {
+  updateTopCounts();
+  showScreen('top');
+}
+
+function updateTopCounts() {
+  const units = {sound:'sound', force:'force', wave:'wave'};
+  for(const [key, prefix] of Object.entries(units)) {
+    const all = getQsByUnit(key, 'ALL');
+    document.getElementById('count-'+key).textContent = `全${all.length}問`;
+  }
+}
+
+// ===== 単元選択 =====
+function selectUnit(unit) {
+  currentUnit = unit;
+  if(unit === 'all') {
+    startQuiz('ALL');
+    return;
+  }
+  const names = {sound:'🔊 音の性質', force:'💪 力のはたらき', wave:'〜 波の性質・発展'};
+  const subs = {sound:'音の伝わり方・振動数・波形', force:'力の種類・フックの法則・力のつり合い', wave:'反射・屈折・弦の振動・ドップラー効果'};
+  const icons = {sound:'🔊', force:'💪', wave:'〜'};
+  document.getElementById('home-icon').textContent = icons[unit];
+  document.getElementById('home-title').textContent = names[unit];
+  document.getElementById('home-sub').textContent = subs[unit];
+
+  const stats = loadStats();
+  const key = unit;
+  const c = (stats[key]||{}).correct||0;
+  const t = (stats[key]||{}).total||0;
+  document.getElementById('h-correct').textContent = c;
+  document.getElementById('h-total').textContent = t;
+  document.getElementById('h-rate').textContent = t>0 ? Math.round(c/t*100)+'%' : '-';
+
+  // 苦手ボタン表示
+  updateWeakBtn(unit);
+  showScreen('home');
+}
+
+function updateWeakBtn(unit) {
+  const weak = loadWeak();
+  const unitQs = getQsByUnit(unit, 'ALL');
+  const unitWeakIds = unitQs.filter(q=>weak.includes(q.id));
+  const btn = document.getElementById('weak-btn');
+  const cnt = document.getElementById('weak-count');
+  if(unitWeakIds.length > 0) {
+    btn.classList.add('visible');
+    cnt.textContent = `${unitWeakIds.length}問 蓄積中`;
+  } else {
+    btn.classList.remove('visible');
+  }
+}
+
+function startWeak() {
+  const weak = loadWeak();
+  if(weak.length === 0) { alert('苦手問題がまだありません！まずドリルに挑戦してみよう'); return; }
+  const allQs = getAllQs();
+  const weakQs = allQs.filter(q => weak.includes(q.id));
+  if(weakQs.length === 0) { alert('この単元の苦手問題がありません'); return; }
+  isWeakMode = true;
+  quizQueue = shuffle(weakQs);
+  quizIdx = 0; sessionPts = 0; sessionCorrect = 0; combo = 0;
+  showScreen('quiz');
+  renderQuestion();
+}
+
+// ===== 問題取得 =====
+function getQsByUnit(unit, level) {
+  if(unit === 'all') {
+    return getAllQs().filter(q => level==='ALL' || q.level===level);
+  }
+  const map = {
+    sound: { BASIC: Q.sound_basic, STANDARD: Q.sound_standard, ADVANCED: Q.sound_advanced },
+    force: { BASIC: Q.force_basic, STANDARD: Q.force_standard, ADVANCED: Q.force_advanced },
+    wave:  { BASIC: Q.wave_basic,  STANDARD: Q.wave_standard,  ADVANCED: Q.wave_advanced }
+  };
+  if(level === 'ALL') {
+    return [...(map[unit].BASIC||[]).map(q=>({...q,level:'BASIC'})),
+            ...(map[unit].STANDARD||[]).map(q=>({...q,level:'STANDARD'})),
+            ...(map[unit].ADVANCED||[]).map(q=>({...q,level:'ADVANCED'}))];
+  }
+  return (map[unit][level]||[]).map(q=>({...q,level}));
+}
+
+function getAllQs() {
+  return [
+    ...Q.sound_basic.map(q=>({...q,level:'BASIC',unit:'sound'})),
+    ...Q.sound_standard.map(q=>({...q,level:'STANDARD',unit:'sound'})),
+    ...Q.sound_advanced.map(q=>({...q,level:'ADVANCED',unit:'sound'})),
+    ...Q.force_basic.map(q=>({...q,level:'BASIC',unit:'force'})),
+    ...Q.force_standard.map(q=>({...q,level:'STANDARD',unit:'force'})),
+    ...Q.force_advanced.map(q=>({...q,level:'ADVANCED',unit:'force'})),
+    ...Q.wave_basic.map(q=>({...q,level:'BASIC',unit:'wave'})),
+    ...Q.wave_standard.map(q=>({...q,level:'STANDARD',unit:'wave'})),
+    ...Q.wave_advanced.map(q=>({...q,level:'ADVANCED',unit:'wave'})),
+  ];
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+// ===== クイズ開始 =====
+function startQuiz(level) {
+  isWeakMode = false;
+  currentLevel = level;
+  lastUnit = currentUnit;
+  lastLevel = level;
+  if(currentUnit === 'all') {
+    quizQueue = shuffle(getAllQs());
+  } else {
+    quizQueue = shuffle(getQsByUnit(currentUnit, level));
+  }
+  if(quizQueue.length === 0) { alert('問題が見つかりません'); return; }
+  quizIdx = 0; sessionPts = 0; sessionCorrect = 0; combo = 0;
+  showScreen('quiz');
+  renderQuestion();
+}
+
+// ===== 問題表示 =====
+function renderQuestion() {
+  if(quizIdx >= quizQueue.length) { endQuiz(); return; }
+  answered = false;
+  firstMiss = false;
+  const q = quizQueue[quizIdx];
+
+  document.getElementById('progress-text').textContent = `${quizIdx+1} / ${quizQueue.length}`;
+  document.getElementById('progress-fill').style.width = `${(quizIdx/quizQueue.length)*100}%`;
+  document.getElementById('score-badge').textContent = sessionPts+'pt';
+  document.getElementById('timer-bar').style.width = '100%';
+  document.getElementById('combo-banner').textContent = combo>=3 ? `🔥 ${combo}コンボ！` : '';
+
+  const lvMap = {BASIC:'🟢 BASIC', STANDARD:'🔵 STANDARD', ADVANCED:'🟡 ADVANCED'};
+  document.getElementById('q-level').textContent = lvMap[q.level]||'';
+  document.getElementById('q-text').textContent = q.q;
+
+  // 選択肢シャッフル
+  const idxArr = q.choices.map((_,i)=>i);
+  for(let i=idxArr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [idxArr[i],idxArr[j]]=[idxArr[j],idxArr[i]];
+  }
+  q._shuffledAns = idxArr.indexOf(q.ans);
+  let cHtml = '';
+  idxArr.forEach((orig,disp)=>{
+    cHtml += `<button class="choice-btn" onclick="answer(${disp})">${q.choices[orig]}</button>`;
+  });
+  document.getElementById('choices').innerHTML = cHtml;
+  document.getElementById('retry-msg').textContent = '';
+  document.getElementById('explanation-card').classList.remove('show');
+  document.getElementById('next-btn').classList.remove('show');
+}
+
+// ===== 回答 =====
+function answer(idx) {
+  if(answered) return;
+  const q = quizQueue[quizIdx];
+  const btns = document.querySelectorAll('.choice-btn');
+  if(idx === q._shuffledAns) {
+    answered = true;
+    btns[idx].classList.add('correct');
+    btns.forEach(b=>b.disabled=true);
+    if(!firstMiss) {
+      const pts = q.level==='BASIC'?1 : q.level==='STANDARD'?2 : 3;
+      sessionPts += pts;
+      sessionCorrect++;
+      combo++;
+      // 苦手リストから除外（1発正解）
+      removeWeak(q.id);
+    }
+    document.getElementById('exp-text').textContent = q.exp;
+    document.getElementById('explanation-card').classList.add('show');
+    document.getElementById('next-btn').classList.add('show');
+    document.getElementById('retry-msg').textContent = '';
+    // 統計保存
+    if(!firstMiss) {
+      const stats = loadStats();
+      const key = q.unit || currentUnit;
+      if(!stats[key]) stats[key]={correct:0,total:0};
+      stats[key].correct++;
+      stats[key].total++;
+      saveStats(stats);
+    }
+  } else {
+    if(!firstMiss) {
+      // 初回ミス：苦手リストに追加
+      addWeak(q.id);
+      const stats = loadStats();
+      const key = q.unit || currentUnit;
+      if(!stats[key]) stats[key]={correct:0,total:0};
+      stats[key].total++;
+      saveStats(stats);
+    }
+    firstMiss = true;
+    combo = 0;
+    btns[idx].classList.add('wrong');
+    document.getElementById('retry-msg').textContent = '❌ もう一度！';
+    answered = true;
+    setTimeout(()=>{
+      btns[idx].classList.remove('wrong');
+      btns[idx].disabled = true;
+      answered = false;
+    }, 600);
+  }
+}
+
+function nextQ() {
+  quizIdx++;
+  renderQuestion();
+}
+
+// ===== 終了 =====
+function endQuiz() {
+  const total = quizQueue.length;
+  const rate = Math.round(sessionCorrect/total*100);
+  const icons = rate>=80?'🎉':rate>=60?'😊':'💪';
+  const titles = rate>=80?'素晴らしい！':rate>=60?'よくできました':'もう一度挑戦！';
+  document.getElementById('result-icon').textContent = icons;
+  document.getElementById('result-title').textContent = titles;
+  document.getElementById('result-score').textContent = sessionPts+'pt';
+  document.getElementById('result-sub').textContent = `${sessionCorrect}/${total}問正解`;
+  document.getElementById('r-correct').textContent = sessionCorrect;
+  document.getElementById('r-wrong').textContent = total-sessionCorrect;
+  document.getElementById('r-rate').textContent = rate+'%';
+  // 苦手がある場合はボタン表示
+  const weak = loadWeak();
+  const rwBtn = document.getElementById('result-weak-btn');
+  if(weak.length > 0) {
+    rwBtn.style.display = '';
+    rwBtn.textContent = `🔥 苦手を特訓（${weak.length}問）`;
+  } else {
+    rwBtn.style.display = 'none';
+  }
+  showScreen('result');
+}
+
+function retryQuiz() {
+  if(isWeakMode) {
+    startWeak();
+  } else {
+    currentUnit = lastUnit;
+    startQuiz(lastLevel);
+  }
+}
+
+// ===== QUIT =====
+function confirmQuit() {
+  document.getElementById('quit-overlay').classList.add('active');
+}
+function cancelQuit() {
+  document.getElementById('quit-overlay').classList.remove('active');
+}
+function doQuit() {
+  document.getElementById('quit-overlay').classList.remove('active');
+  showTop();
+}
+
+// ===== 初期化 =====
+updateTopCounts();
+(function initTopWeak(){
+  const weak = loadWeak();
+  const btn = document.getElementById('top-weak-btn');
+  const cnt = document.getElementById('top-weak-count');
+  if(weak.length > 0) {
+    btn.classList.add('visible');
+    cnt.textContent = `全体 ${weak.length}問 蓄積中`;
+  } else {
+    btn.classList.remove('visible');
+  }
+})();
+</script>
+</body>
+</html>
